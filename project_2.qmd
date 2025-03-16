@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 ---
 title: "Movie Dataset Analysis"
 author: "Your Name"
@@ -139,3 +140,156 @@ ggplot(data1, aes(x = predicted_probs, fill = factor(rating_binary))) +
 # Conclusion
 
 Based on the model selection criteria, we choose **Model 2**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance.
+=======
+---
+title: "Movie Dataset Analysis"
+author: "Group_10"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: show
+---
+
+# Introduction
+
+This report analyzes a movie dataset, exploring trends in ratings, genres, and yearly movie counts. Various statistical models are applied to examine factors influencing movie ratings.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(lmtest)
+```
+
+# Load Dataset
+
+```{r}
+data <- read.csv("dataset10.csv")
+str(data)
+summary(data)
+```
+
+# Data Cleaning
+
+Removing missing values:
+
+```{r}
+data1 <- na.omit(data)
+```
+
+# Exploratory Data Analysis (EDA)
+
+## Rating Distribution
+
+```{r}
+ggplot(data1, aes(x = rating)) +
+  geom_histogram(binwidth = 0.5, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Rating", x = "Rating", y = "Count")
+```
+
+## Top 10 Movie Genres
+
+```{r}
+genre_count <- data %>%
+  separate_rows(genre, sep = "\\|") %>%
+  count(genre, sort = TRUE) %>%
+  head(10)
+
+ggplot(genre_count, aes(x = reorder(genre, n), y = n)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  coord_flip() +
+  labs(title = "Top 10 Most Common Movie Genres", x = "Genre", y = "Count")
+```
+
+## Movies Released Per Year
+
+```{r}
+movies_per_year <- data %>%
+  group_by(year) %>%
+  summarize(count = n())
+
+ggplot(movies_per_year, aes(x = year, y = count)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Number of Movies Released Per Year", x = "Year", y = "Count")
+```
+
+# Binary Rating Classification
+
+```{r}
+data1$rating_binary <- ifelse(data1$rating >= 7, 1, 0)
+
+ggplot(data1, aes(x = factor(rating_binary), fill = factor(rating_binary))) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "Distribution of Binary Rating", x = "Binary Rating", y = "Count")
+```
+
+## standardization
+```{r}
+#x-min/max-min standard methods
+min_max_norm=function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+#standardize
+data1[,3:5]=lapply(data1[,3:5],min_max_norm)
+```
+
+# Regression Analysis
+
+## Linear Model
+
+```{r}
+data1$genre_num <- as.factor(data1$genre)
+model1 <- lm(rating ~ length + budget + votes + genre_num, data = data1)
+summary(model1)
+```
+
+## Residual Plot for Linear Model
+
+```{r}
+ggplot(data1, aes(x = model1$fitted.values, y = model1$residuals)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot of Linear Model", x = "Fitted Values", y = "Residuals")
+```
+
+## Logistic Regression Models
+
+```{r}
+model2 <- glm(rating_binary ~ length + budget + votes + genre_num, data = data1, family = binomial)
+summary(model2)
+
+model3 <- glm(rating_binary ~ year + length + budget + votes + genre_num, data = data1)
+summary(model3)
+```
+
+## Model Comparison
+
+```{r}
+AIC(model2, model3)
+BIC(model2, model3)
+```
+
+## Wald Test
+
+```{r}
+wald_test1 <- coeftest(model2)
+wald_test2 <- coeftest(model3)
+```
+
+# Visualization of Model Predictions
+
+```{r}
+data1$predicted_probs <- predict(model2, type = "response")
+ggplot(data1, aes(x = predicted_probs, fill = factor(rating_binary))) +
+  geom_histogram(binwidth = 0.05, alpha = 0.7, position = "identity") +
+  labs(title = "Predicted Probabilities of Binary Rating", x = "Predicted Probability", y = "Count")
+```
+
+# Conclusion
+
+Based on the model selection criteria, we choose **Model 2**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance.
+>>>>>>> Stashed changes
