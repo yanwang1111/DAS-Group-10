@@ -117,10 +117,12 @@ ggplot(data1, aes(x = model1$fitted.values, y = model1$residuals)) +
 ## Logistic Regression Models
 
 ```{r}
-model2 <- glm(rating_binary ~ length + budget + votes + genre_num, data = data1, family = binomial)
+model2 <- glm(rating_binary ~ year + length + budget + votes + genre_num, data = data1, family = binomial)
 summary(model2)
+```
 
-model3 <- glm(rating_binary ~ year + length + budget + votes + genre_num, data = data1)
+```{r}
+model3<-glm(rating_binary ~ length + budget + votes + genre_num, data = data1, family = binomial)
 summary(model3)
 ```
 
@@ -137,7 +139,6 @@ BIC(model2, model3)
 wald_test1 <- coeftest(model2)
 wald_test2 <- coeftest(model3)
 ```
-
 
 ## Residuals Plot
 
