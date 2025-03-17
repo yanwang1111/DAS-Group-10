@@ -138,6 +138,42 @@ wald_test1 <- coeftest(model2)
 wald_test2 <- coeftest(model3)
 ```
 
+
+## Residuals Plot
+
+```{r}
+# Function to plot residuals
+plot_residuals <- function(model, model_name) {
+  residuals_data <- data.frame(
+    Fitted_Values = fitted(model),
+    Pearson_Residuals = residuals(model, type = "pearson"),
+    Deviance_Residuals = residuals(model, type = "deviance")
+  )
+  
+  # Pearson Residuals Plot
+  p1 <- ggplot(residuals_data, aes(x = Fitted_Values, y = Pearson_Residuals)) +
+    geom_point(alpha = 0.5) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    labs(title = paste("Pearson Residuals -", model_name), x = "Fitted Values", y = "Pearson Residuals") +
+    theme_minimal()
+  
+  # QQ Plot of Deviance Residuals
+  p2 <- ggplot(residuals_data, aes(sample = Deviance_Residuals)) +
+    stat_qq() +
+    stat_qq_line(color = "red") +
+    labs(title = paste("QQ Plot of Deviance Residuals -", model_name)) +
+    theme_minimal()
+  
+  print(p1)
+  print(p2)
+}
+
+# Generate residual plots for Model 1, 2, and 3
+plot_residuals(model1, "Model 1")
+plot_residuals(model2, "Model 2")
+plot_residuals(model3, "Model 3")
+```
+
 # Visualization of Model Predictions
 
 ```{r}
