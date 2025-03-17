@@ -133,6 +133,12 @@ AIC(model2, model3)
 BIC(model2, model3)
 ```
 
+The difference between Model 2 and Model 3 is that Model 3 adds the extra variable year. However, the regression results show that the coefficient of year is not significant (p = 0.379), which means that it does not contribute much to the prediction of rating_binary and cannot significantly improve the classification ability. In addition, year may be related to budget and votes, which may lead to the problem of multicollinearity and affect the stability of the model. Therefore, in order to ensure the interpretability of the model, we remove the year variable, which simplifies the model and maintains the good prediction effect.
+
+Regarding the categorical variable genre_num, there are obvious differences in the impact of different film genres on the ratings. Comedies, documentaries and short films are more likely to get high ratings, especially documentaries have the strongest positive effect. Drama, on the other hand, has a significant negative impact on ratings, indicating that it is more difficult for films of this genre to obtain high ratings. Meanwhile, animated films and romances do not have a significant effect, which may be related to the uneven distribution of the sample or the diversity of rating characteristics.
+
+In the end, we chose Model 3 (without year) as the final logistic regression model to ensure the stability and interpretability of the model, while retaining the analysis of key factors such as film genre, budget, duration and number of votes.
+
 ## Wald Test
 
 ```{r}
