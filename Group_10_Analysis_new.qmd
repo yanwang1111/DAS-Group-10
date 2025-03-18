@@ -1,0 +1,288 @@
+---
+title: "Movie Dataset Analysis"
+author: "Group_10"
+date: "`r Sys.Date()`"
+format:
+  pdf:
+    include-in-header: |
+      \usepackage{caption}
+      \captionsetup{justification=centering}
+header-includes: |
+  \usepackage{fvextra}
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+execute:
+  warning: false  
+  message: false  
+editor: visual
+---
+
+# **Introduction**
+
+This report analyzes a movie dataset, exploring trends in ratings, genres, and yearly movie counts. Various statistical models are applied to examine factors influencing movie ratings.Namely: exploring Movie Trends, rating distribution, genre popularity, success prediction.
+
+##### Load necessary libraries for data manipulation, visualization, and statistical analysis
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(lmtest)
+library(gridExtra)
+```
+
+##### Load Dataset
+
+The dataset consists of 7 variables: film_id (Unique identifier for each movie), year (The year the movie was released), length (Duration of the movie in minutes), budget (Budget of the movie (in million dollars)), votes (Number of votes received on IMDb), genre (The genre(s) of the movie), rating (IMDb rating of the movie).
+
+```{r}
+data <- read.csv("dataset10.csv")
+str(data)
+summary(data)
+```
+
+##### Data Cleaning
+
+By using na.omit() function, the data was cleaned, namely sells with "N/A" were deleted in a whole row.
+
+```{r}
+data1 <- na.omit(data)
+```
+
+# Exploratory Data Analysis (EDA)
+
+## Rating Distribution
+
+The histogram shows the distribution of IMDb movie ratings, revealing a bimodal pattern with peaks around 4.0 and 7.5. This suggests that movies tend to be rated either poorly or highly, with fewer falling in the mid-range (5.5–7.0). The x-axis represents ratings, while the y-axis shows the count of movies in each range. The gap in the middle indicates differences in movie quality, budget, or audience perception, where some films receive strong praise while others are widely criticized. Distribution is not distributed normally at all, however, by categorizeing them into binomial, in GLM the data will be observed only that, which has rating more than 7.
+
+```{r}
+#| label: fig-histogram
+#| fig-cap: Distribution of Rating
+#| fig-align: center
+ggplot(data1, aes(x = rating)) +
+  geom_histogram(binwidth = 0.5, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Rating", x = "Rating", y = "Count")
+```
+
+## Top 10 Movie Genres
+
+Barplot below shows top-10 most common movie genres. The first two places were taken by "drama" and "action" genres with more than 435, and the lowest number of films in "romance" genre, that are about 16.
+
+```{r}
+#| label: fig-top
+#| fig-cap: Top 10 most common movie genres
+#| fig-align: center
+genre_count <- data %>%
+  separate_rows(genre, sep = "\\|") %>%
+  count(genre, sort = TRUE) %>%
+  head(10)
+
+ggplot(genre_count, aes(x = reorder(genre, n), y = n)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  coord_flip() +
+  labs(title = "Top 10 most common movie genres", x = "Genre", y = "Count")
+```
+
+## Movies Released Per Year
+
+The line graph illustrates the number of movies released per year from the early 1900s to the early 2000s. Initially, movie production was minimal, but it steadily increased throughout the 20th century, with occasional fluctuations. A noticeable surge occurs around the 1970s and beyond, with a significant peak in the late 1990s and early 2000s, reflecting the rise of the global film industry, advancements in technology, and increased accessibility to filmmaking. The sharp decline at the end could be due to incomplete data for recent years. The red dots highlight individual data points, while the blue line connects them, showing an overall upward trend in movie production over time.
+
+```{r}
+#| label: fig-timeseries
+#| fig-cap: Number of movies released per year
+#| fig-align: center
+movies_per_year <- data %>%
+  group_by(year) %>%
+  summarize(count = n())
+
+ggplot(movies_per_year, aes(x = year, y = count)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Number of movies released per year", x = "Year", y = "Count")
+```
+
+## Binary Rating Classification
+
+Since the main idea asks to observe all films, that has rating more than 7 in the dataset, and dataset's rating spreads widely, the main idea of bunary rating calssification was taken. All films, that were rated more than 7 have "1" as binomial category and all other are "0". Do show the distribution, histogram was visualized below.
+
+```{r}
+#| label: fig-binary
+#| fig-cap: Distribution of Binary Rating
+#| fig-align: center
+data1$rating_binary <- ifelse(data1$rating >= 7, 1, 0)
+
+ggplot(data1, aes(x = factor(rating_binary), fill = factor(rating_binary))) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "Distribution of Binary Rating", x = "Binary Rating", y = "Count")
+```
+
+## Standardization
+
+The min_max_norm function scales numerical values so that the minimum value becomes 0 and the maximum becomes 1, which helps in standardizing data for machine learning models. lapply(data1\[,2:5\], min_max_norm) applies this function to columns 2 to 5 of data1, modifying them in place. Normalization ensures that all numerical features have the same scale, preventing any single variable from dominating analysis due to larger values.
+
+```{r}
+#x-min/max-min standard methods
+min_max_norm=function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+#standardize
+data1[,2:5]=lapply(data1[,2:5],min_max_norm)
+```
+
+# Regression Analysis
+
+## Linear Model
+
+**Model 1: Linear Regression for Movie Rating Prediction**
+
+This linear regression model predicts a movie's IMDb rating based on length, budget, votes, and genre. The Intercept (4.4429) suggests that, on average, a movie with all predictors at their baseline would have a rating of 4.44. The budget (3.5537) and votes (1.6458) have a positive impact, indicating that movies with higher budgets and more votes tend to have higher ratings. Conversely, length (-4.7525) has a negative coefficient, suggesting that longer movies tend to receive lower ratings.
+
+Among the genre variables, comedies (1.6242), documentaries (2.5820), animations (1.0762), and short films (2.1237) have significant positive effects, indicating these genres tend to have higher ratings than the baseline genre. Dramas (-0.4168) and romances (-1.2714) have negative effects, implying that these genres are associated with lower ratings on average.
+
+The model explains 48.84% of the variance in movie ratings (R² = 0.4884), which suggests that while the included predictors have a strong impact, other unexplored factors (such as director, cast, screenplay quality, and audience demographics) may also significantly influence ratings. The F-statistic (151.3, p \< 2.2e-16) indicates that the overall model is highly significant. However, the residual standard error (1.499) suggests some variability in predictions, and the residual plot (from the provided image) shows non-random patterns, indicating that the model might not fully capture all relationships. This suggests that non-linear models or additional features might improve prediction accuracy.
+
+```{r}
+data1$genre_num <- as.factor(data1$genre)
+model1 <- lm(rating ~ year+length + budget + votes + genre_num, data = data1)
+summary(model1)
+```
+
+## Residual Plot for Linear Model
+
+The residual plot of the linear model shows the residuals (errors) on the y-axis and the fitted values (predicted ratings) on the x-axis. Ideally, residuals should be randomly scattered around the red dashed line at zero, indicating that the model's errors are uniformly distributed. However, the plot reveals a clear pattern, suggesting that the model might not fully capture the relationship between predictors and ratings. The funnel shape (wider spread for lower ratings) hints at heteroscedasticity, meaning the variance of errors is not constant across predictions. Additionally, the curved trend implies possible non-linearity, meaning a linear model might not be the best fit.
+
+```{r}
+#| label: fig-redidual
+#| fig-cap: Residual Plot of Linear Model
+#| fig-align: center
+ggplot(data1, aes(x = model1$fitted.values, y = model1$residuals)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot of Linear Model", x = "Fitted Values", y = "Residuals")
+```
+
+## Logistic Regression Models
+
+Model 2: Logistic Regression for Binary Rating Classification
+
+This logistic regression model predicts whether a movie's rating falls into a high or low category (binary classification) using various features such as year, length, budget, votes, and genre. The Intercept value of -2.2215 suggests that, without any predictor variables, the log-odds of a high rating are negative, indicating a lower likelihood. The budget (11.2481) and votes (4.8041) have strong positive effects, meaning that movies with higher budgets and more votes are more likely to receive a high rating. Conversely, length (-19.5733) and drama genre (-2.0779) have significant negative impacts, implying that longer movies and dramas are less likely to be rated highly.
+
+The p-values indicate the significance of each variable: budget, length, votes, comedy, documentary, and short films have highly significant effects (p \< 0.05), whereas year, animation, and romance genres are not statistically significant. The null deviance (1858.7) vs. residual deviance (711.5) shows a substantial reduction, indicating that the model explains a significant portion of variability. The AIC (733.5) suggests the model’s overall quality, with lower values indicating better fit. However, the large standard error for the romance genre (562.2956) suggests instability, possibly due to sparse data in that category. Overall, the model performs well but may benefit from feature engineering or alternative classification techniques to improve accuracy.
+
+```{r}
+model2 <- glm(rating_binary ~ year + length + budget + votes + genre_num, data = data1, family = binomial)
+summary(model2)
+```
+
+Model 3: Logistic Regression for Binary Rating Classification (Without Year Variable)
+
+This logistic regression model is a variation of Model 2, where the year variable has been removed. The model still predicts whether a movie's rating falls into a high or low category, based on length, budget, votes, and genre. The Intercept (-2.0297) remains negative, suggesting that a movie with average values for all predictors is more likely to receive a low rating.
+
+The budget (11.2226) and votes (4.8916) continue to have a strong positive impact, indicating that movies with larger budgets and higher vote counts are more likely to receive high ratings. Conversely, length (-19.2431), and drama genre (-2.0757) retain their negative,effects, meaning that longer movies and dramas are less likely to receive high ratings. The romance genre still shows an insignificant effect (p = 0.9777) with a high standard error (556.2689), reinforcing potential data sparsity issues in that category.
+
+The removal of the year variable did not significantly impact model performance, as indicated by the residual deviance (712.27, close to Model 2’s 711.5) and AIC (732.27 vs. 733.5 in Model 2). The significance levels remain nearly identical for all variables, suggesting that year did not contribute much predictive power. This model is slightly simpler than Model 2 and may be preferred if interpretability and feature selection are prioritized. However, alternative modeling approaches, such as non-linear models or interactions, could be explored for further improvements.
+
+```{r}
+model3<-glm(rating_binary ~ length + budget + votes + genre_num, data = data1, family = binomial)
+summary(model3)
+```
+
+## Model Comparison
+
+The difference between Model 2 and Model 3 is that Model 3 adds the extra variable year. However, the regression results show that the coefficient of year is not significant (p = 0.379), which means that it does not contribute much to the prediction of rating_binary and cannot significantly improve the classification ability. In addition, year may be related to budget and votes, which may lead to the problem of multicollinearity and affect the stability of the model. Therefore, in order to ensure the interpretability of the model, we remove the year variable, which simplifies the model and maintains the good prediction effect.
+
+Regarding the categorical variable genre_num, there are obvious differences in the impact of different film genres on the ratings. Comedies, documentaries and short films are more likely to get high ratings, especially documentaries have the strongest positive effect. Drama, on the other hand, has a significant negative impact on ratings, indicating that it is more difficult for films of this genre to obtain high ratings. Meanwhile, animated films and romances do not have a significant effect, which may be related to the uneven distribution of the sample or the diversity of rating characteristics.
+
+In the end, we chose Model 3 (without year) as the final logistic regression model to ensure the stability and interpretability of the model, while retaining the analysis of key factors such as film genre, budget, duration and number of votes.
+
+```{r}
+AIC(model2, model3)
+BIC(model2, model3)
+```
+
+## Wald Test
+
+The results of the z-tests for both Model 2 and Model 3 reveal that the most significant predictors of the outcome are movie length, budget, votes, and the presence of certain genres such as comedy, documentary, and drama, with p-values consistently showing high significance. In contrast, theyear and romance genre show no significant impact in either model, as evidenced by their non-significant p-values. While the coefficients for animation in both models have somewhat higher p-values, indicating no strong effect, the overall significance of the other predictors suggests that factors like budget and genre play a crucial role in the model's prediction, while year and romance appear to be less influential. These findings suggest that the models are largely consistent, with key predictors being reliably identified across both specifications.
+
+```{r}
+wald_test1 <- coeftest(model2)
+wald_test1
+```
+
+```{r}
+wald_test2 <- coeftest(model3)
+wald_test2
+```
+
+## Residuals Plot
+
+The residual plots for Models 1, 2, and 3 highlight key issues in their respective fits. Model 1 (Linear Regression) shows a clear pattern in the Pearson residuals, indicating a violation of the linearity assumption, while the funnel shape suggests heteroscedasticity. Additionally, its QQ plot of deviance residuals reveals some deviations from normality, which could affect inference. Model 2 (Logistic Regression with Year) displays Pearson residuals clustered near the extremes, suggesting that certain observations are predicted with high certainty, but others may not fit well. The corresponding QQ plot shows noticeable departures from normality, particularly at the tails, which might indicate issues with model specification. Model 3 (Logistic Regression without Year) follows a similar pattern to Model 2, with residual clustering at the boundaries and an S-shaped QQ plot suggesting non-normality. These results indicate that while logistic regression is expected to show non-normal residuals, improvements such as feature engineering, interaction terms, or alternative modeling approaches (e.g., decision trees or ensemble methods) could enhance prediction performance and model reliability.
+
+```{r}
+
+# Function to plot residuals
+plot_residuals <- function(model, model_name) {
+  residuals_data <- data.frame(
+    Fitted_Values = fitted(model),
+    Pearson_Residuals = residuals(model, type = "pearson"),
+    Deviance_Residuals = residuals(model, type = "deviance")
+  )
+  
+  # Pearson Residuals Plot
+  p1 <- ggplot(residuals_data, aes(x = Fitted_Values, y = Pearson_Residuals)) +
+    geom_point(alpha = 0.5) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    labs(title = "Pearson Residuals ", x = "Fitted Values", y = "Pearson Residuals") +
+    theme(plot.title = element_text(size = 12, hjust = 0.5))
+  
+  # QQ Plot of Deviance Residuals
+  p2 <- ggplot(residuals_data, aes(sample = Deviance_Residuals)) +
+    stat_qq() +
+    stat_qq_line(color = "red") +
+    labs(title = "QQ Plot of Deviance Residuals") +
+    theme(plot.title = element_text(size = 12, hjust = 0.5))
+  grid.arrange(p1, p2, ncol = 2)
+}
+```
+```{r}
+#| label: fig-model1
+#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model1)"
+#| fig-align: center
+# Generate residual plots for Model 1, 2, and 3
+plot_residuals(model1, "Model 1")
+```
+```{r}
+#| label: fig-model2
+#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model2)"
+#| fig-align: center
+plot_residuals(model2, "Model 2")
+```
+```{r}
+#| label: fig-model3
+#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model3)"
+#| fig-align: center
+plot_residuals(model3, "Model 3")
+```
+
+# Visualization of Model Predictions
+
+The histogram illustrates the predicted probabilities of a binary movie rating (0 or 1) from Model 2. The x-axis represents the predicted probability, while the y-axis shows the count of observations. The red bars correspond to movies classified as 0 (low rating), and the blue bars correspond to 1 (high rating). The plot reveals a strong separation, with most low-rated movies having predicted probabilities near 0, and high-rated movies concentrated around 1, suggesting that the model effectively differentiates between the two classes. However, there is a small region of overlap in the middle, indicating some misclassification or uncertainty in predictions. This suggests that while the model performs well overall, it may benefit from further refinements such as adding interaction terms or addressing potential data imbalances.
+
+```{r}
+#| label: fig-predict
+#| fig-cap: "Predicted Probabilities of Binary Rating"
+#| fig-align: center
+data1$predicted_probs <- predict(model2, type = "response")
+ggplot(data1, aes(x = predicted_probs, fill = factor(rating_binary))) +
+  geom_histogram(binwidth = 0.05, alpha = 0.7, position = "identity") +
+  labs(title = "Predicted Probabilities of Binary Rating", x = "Predicted Probability", y = "Count")
+```
+
+# Conclusion
+
+The analysis of the logistic regression models for predicting binary movie ratings provided valuable insights. Model 1, which included all predictors, and Model 2, which excluded the year variable, both demonstrated strong predictive power with similar residual deviance and AIC values. Model 3, which further simplified the model by removing year, showed only a slight increase in residual deviance, suggesting that the year variable may not be a crucial predictor. Across all models, budget, votes, and movie length were highly significant, with genre also playing a role, particularly for Comedy, Documentary, and Drama films. Interestingly, some genres, such as Romance, did not show strong statistical significance, which may indicate either a weaker relationship with rating success or data limitations.
+
+Residual plots for all three models revealed some issues, particularly in the Pearson residuals for Model 1, which displayed a distinct pattern, indicating potential model misfit. The QQ plots of deviance residuals for all models deviated from the expected normal distribution, suggesting possible violations of logistic regression assumptions. Additionally, the predicted probability histogram for Model 2 illustrated a strong separation between low-rated and high-rated movies, with most low-rated movies having probabilities near zero and high-rated movies clustering around one. However, some overlap between the two classes suggests possible misclassification and areas where the model could be improved.
+
+Based on the model selection criteria, we choose **Model 2**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance. \>\>\>\>\>\>\> Stashed changes
+
+Overall, while the models successfully classify movies based on key attributes, there are opportunities for refinement. Alternative modeling approaches, such as non-linear transformations, interaction terms, or more advanced machine learning techniques like decision trees and ensemble methods, could improve predictive performance. Additionally, checking for multicollinearity, considering additional relevant predictors, or experimenting with different threshold values for classification may further enhance the model’s accuracy. Despite some residual concerns, these models provide a solid foundation for predicting movie success and offer a useful tool for understanding the factors influencing audience ratings.
