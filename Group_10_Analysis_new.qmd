@@ -243,6 +243,7 @@ plot_residuals <- function(model, model_name) {
   grid.arrange(p1, p2, ncol = 2)
 }
 ```
+
 ```{r}
 #| label: fig-model1
 #| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model1)"
@@ -250,12 +251,14 @@ plot_residuals <- function(model, model_name) {
 # Generate residual plots for Model 1, 2, and 3
 plot_residuals(model1, "Model 1")
 ```
+
 ```{r}
 #| label: fig-model2
 #| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model2)"
 #| fig-align: center
 plot_residuals(model2, "Model 2")
 ```
+
 ```{r}
 #| label: fig-model3
 #| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model3)"
@@ -283,6 +286,6 @@ The analysis of the logistic regression models for predicting binary movie ratin
 
 Residual plots for all three models revealed some issues, particularly in the Pearson residuals for Model 1, which displayed a distinct pattern, indicating potential model misfit. The QQ plots of deviance residuals for all models deviated from the expected normal distribution, suggesting possible violations of logistic regression assumptions. Additionally, the predicted probability histogram for Model 2 illustrated a strong separation between low-rated and high-rated movies, with most low-rated movies having probabilities near zero and high-rated movies clustering around one. However, some overlap between the two classes suggests possible misclassification and areas where the model could be improved.
 
-Based on the model selection criteria, we choose **Model 2**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance. \>\>\>\>\>\>\> Stashed changes
+Based on the model selection criteria, we choose **Model 3**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance. \>\>\>\>\>\>\> Stashed changes
 
 Overall, while the models successfully classify movies based on key attributes, there are opportunities for refinement. Alternative modeling approaches, such as non-linear transformations, interaction terms, or more advanced machine learning techniques like decision trees and ensemble methods, could improve predictive performance. Additionally, checking for multicollinearity, considering additional relevant predictors, or experimenting with different threshold values for classification may further enhance the model’s accuracy. Despite some residual concerns, these models provide a solid foundation for predicting movie success and offer a useful tool for understanding the factors influencing audience ratings.
