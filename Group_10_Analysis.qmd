@@ -215,7 +215,7 @@ wald_test2
 
 ## Residuals Plot
 
-The residual plots for Models 1, 2, and 3 highlight key issues in their respective fits. Model 1 (Linear Regression) shows a clear pattern in the Pearson residuals, indicating a violation of the linearity assumption, while the funnel shape suggests heteroscedasticity. Additionally, its QQ plot of deviance residuals reveals some deviations from normality, which could affect inference. Model 2 (Logistic Regression with Year) displays Pearson residuals clustered near the extremes, suggesting that certain observations are predicted with high certainty, but others may not fit well. The corresponding QQ plot shows noticeable departures from normality, particularly at the tails, which might indicate issues with model specification. Model 3 (Logistic Regression without Year) follows a similar pattern to Model 2, with residual clustering at the boundaries and an S-shaped QQ plot suggesting non-normality. These results indicate that while logistic regression is expected to show non-normal residuals, improvements such as feature engineering, interaction terms, or alternative modeling approaches (e.g., decision trees or ensemble methods) could enhance prediction performance and model reliability.
+The residual plots for Models 1, 2, and 3 highlight key issues in their respective fits. Model 1 (Linear Regression) shows a clear pattern in the Pearson residuals, indicating a violation of the linearity assumption, while the funnel shape suggests heteroscedasticity. Model 2 (Logistic Regression with Year) displays Pearson residuals clustered near the extremes, suggesting that certain observations are predicted with high certainty, but others may not fit well. Model 3 (Logistic Regression without Year) follows a similar pattern to Model 2, with residual clustering at the boundaries. These results indicate that while logistic regression is expected to show non-normal residuals, improvements such as feature engineering, interaction terms, or alternative modeling approaches (e.g., decision trees or ensemble methods) could enhance prediction performance and model reliability.
 
 ```{r}
 
@@ -228,25 +228,18 @@ plot_residuals <- function(model, model_name) {
   )
   
   # Pearson Residuals Plot
-  p1 <- ggplot(residuals_data, aes(x = Fitted_Values, y = Pearson_Residuals)) +
+ggplot(residuals_data, aes(x = Fitted_Values, y = Pearson_Residuals)) +
     geom_point(alpha = 0.5) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
     labs(title = "Pearson Residuals ", x = "Fitted Values", y = "Pearson Residuals") +
     theme(plot.title = element_text(size = 12, hjust = 0.5))
-  
-  # QQ Plot of Deviance Residuals
-  p2 <- ggplot(residuals_data, aes(sample = Deviance_Residuals)) +
-    stat_qq() +
-    stat_qq_line(color = "red") +
-    labs(title = "QQ Plot of Deviance Residuals") +
-    theme(plot.title = element_text(size = 12, hjust = 0.5))
-  grid.arrange(p1, p2, ncol = 2)
+
 }
 ```
 
 ```{r}
 #| label: fig-model1
-#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model1)"
+#| fig-cap: "Pearson Residuals(model1)"
 #| fig-align: center
 # Generate residual plots for Model 1, 2, and 3
 plot_residuals(model1, "Model 1")
@@ -254,14 +247,14 @@ plot_residuals(model1, "Model 1")
 
 ```{r}
 #| label: fig-model2
-#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model2)"
+#| fig-cap: "Pearson Residuals(model2)"
 #| fig-align: center
 plot_residuals(model2, "Model 2")
 ```
 
 ```{r}
 #| label: fig-model3
-#| fig-cap: "Pearson Residuals & QQ Plot of Deviance Residuals(model3)"
+#| fig-cap: "Pearson Residuals(model3)"
 #| fig-align: center
 plot_residuals(model3, "Model 3")
 ```
@@ -284,7 +277,7 @@ ggplot(data1, aes(x = predicted_probs, fill = factor(rating_binary))) +
 
 The analysis of the logistic regression models for predicting binary movie ratings provided valuable insights. Model 1, which included all predictors, and Model 2, which excluded the year variable, both demonstrated strong predictive power with similar residual deviance and AIC values. Model 3, which further simplified the model by removing year, showed only a slight increase in residual deviance, suggesting that the year variable may not be a crucial predictor. Across all models, budget, votes, and movie length were highly significant, with genre also playing a role, particularly for Comedy, Documentary, and Drama films. Interestingly, some genres, such as Romance, did not show strong statistical significance, which may indicate either a weaker relationship with rating success or data limitations.
 
-Residual plots for all three models revealed some issues, particularly in the Pearson residuals for Model 1, which displayed a distinct pattern, indicating potential model misfit. The QQ plots of deviance residuals for all models deviated from the expected normal distribution, suggesting possible violations of logistic regression assumptions. Additionally, the predicted probability histogram for Model 2 illustrated a strong separation between low-rated and high-rated movies, with most low-rated movies having probabilities near zero and high-rated movies clustering around one. However, some overlap between the two classes suggests possible misclassification and areas where the model could be improved.
+Residual plots for all three models revealed some issues, particularly in the Pearson residuals for Model 1, which displayed a distinct pattern, indicating potential model misfit. Additionally, the predicted probability histogram for Model 2 illustrated a strong separation between low-rated and high-rated movies, with most low-rated movies having probabilities near zero and high-rated movies clustering around one. However, some overlap between the two classes suggests possible misclassification and areas where the model could be improved.
 
 Based on the model selection criteria, we choose **Model 3**, which does not include the `year` variable, as it has the lowest AIC value. The analysis also indicates that the `year` variable and the movie identifier are **not statistically significant** (p-value \> 0.05), meaning they do not meaningfully contribute to predicting the binary rating outcome. Removing these variables simplifies the model without losing predictive power. Future work may explore additional predictors or alternative modeling approaches to further enhance predictive performance. \>\>\>\>\>\>\> Stashed changes
 
